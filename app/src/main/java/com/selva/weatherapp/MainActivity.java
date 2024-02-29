@@ -5,6 +5,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,16 +23,30 @@ import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final String WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather?q=%s&appid=69074104a352489117eaa703ccdb1880&lang=ru&units=metric";
+
+    private EditText editTextCity;
+    private TextView textViewWeather;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        DownloadJSONTask task = new DownloadJSONTask();
-        task.execute("https://api.openweathermap.org/data/2.5/weather?lat=55.7505412&lon=37.6174782&appid=69074104a352489117eaa703ccdb1880");
+        editTextCity = findViewById(R.id.editTextCity);
+        textViewWeather = findViewById(R.id.textViewWeather);
     }
 
-    private static class DownloadJSONTask extends AsyncTask<String, Void, String> {
+    public void onClickShowWeather(View view) {
+        String city = editTextCity.getText().toString().trim();
+        if (!city.isEmpty()) {
+            DownloadWeatherTask task = new DownloadWeatherTask();
+            String url = String.format(WEATHER_URL, city);
+            task.execute(url);
+            Log.e("STRING!!!", url);
+        }
+    }
 
+    private class DownloadWeatherTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... strings) {
             URL url = null;
@@ -64,11 +81,12 @@ public class MainActivity extends AppCompatActivity {
             super.onPostExecute(s);
             try {
                 JSONObject jsonObject = new JSONObject(s);
-                JSONArray jsonArray = jsonObject.getJSONArray("weather");
-                JSONObject weather = jsonArray.getJSONObject(0);
-                String main = weather.getString("main");
-                String description = weather.getString("description");
-                Log.i("My Results", main + " " + description);
+                String city = jsonObject.getString("name");
+                String temp = jsonObject.getJSONObject("main").getString("temp");
+                String description = jsonObject.getJSONArray("weather").getJSONObject(0).getString("description");
+                String weather = String.format("%s\nТемпература: %s\nНа улице: %s", city, temp, description);
+                textViewWeather.setText(weather);
+                Log.i("My Results"," " + description);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
